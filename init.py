@@ -2,18 +2,20 @@ import os
 import discord
 import member_functions as mf
 from sqlalchemy import create_engine
-
-# For loading discord token
+from datetime import datetime
 from dotenv import load_dotenv
 
 # Load the variables from .env
 load_dotenv()
 
 TOKEN = os.getenv('TOKEN')
-NOBLES = os.getenv('NOBLES')
-MODS = os.getenv('MODERATORS')
-ADMIN = os.getenv('ADMIN')
+NOBLES = int(os.getenv('NOBLES'))
+MODS = int(os.getenv('MODERATORS'))
+ADMIN = int(os.getenv('ADMIN'))
+clansheet = os.getenv('clansheet')
 url = os.getenv('url')
+
+reqRoles = [NOBLES,MODS,ADMIN]
 
 client = discord.Client()
 db = create_engine(url, echo = False)
@@ -100,5 +102,40 @@ async def on_message(message):
 			# Needs more/less fields
 			await message.channel.send('Error: You need to add {0} fields, meaning it can only have {1} comma.'\
 				' For example: $update oldname,newname'.format(2,1))
+
+
+
+	if message.content.startswith('$total'):
+		conn = db.connect()
+		totalMembers = conn.execute("SELECT COUNT(*) FROM members").fetchone()[0]
+		await message.channel.send('There are a total of {0} Noble Members.'.format(totalMembers))
+		conn.close()
+
+
+
+	if message.content.startswith('$new'):
+		if any(role.id in reqRoles for role in message.author.roles):
+			userToAdd = message.content[5:]
+			date = datetime.now().date()
+			conn = db.connect()
+			if conn.execute("SELECT EXISTS(SELECT 1 FROM members WHERE LOWER(username) = LOWER('{user}'))".format(user=userToAdd)).fetchone()[0] == True:
+				await message.channel.send('{user} was not added and already exists!'.format(user=userToAdd))
+			else:
+				conn.execute("INSERT INTO members(username,joined) VALUES('{user}','{date}')".format(user=userToAdd,date=date))
+				await message.channel.send('{user} has been successfully added to the clan sheet!'.format(user=userToAdd))
+			conn.close()
+		else:
+			await message.channel.send('You don\'t have the required role!')
+	
+
+
+	if message.content.startswith('$clansheet'):
+		if any(role.id in reqRoles for role in message.author.roles):
+			await message.channel.send(clansheet)
+		else:
+			await message.channel.send('You don\'t have the required role!')
+
+
+
 client.run(TOKEN)
 db.dispose()
