@@ -126,6 +126,22 @@ async def on_message(message):
 			conn.close()
 		else:
 			await message.channel.send('You don\'t have the required role!')
+
+
+
+	if message.content.startswith('$remove'):
+		if any(role.id in reqRoles for role in message.author.roles):
+			userToRemove = message.content[8:]
+			date = datetime.now().date()
+			conn = db.connect()
+			if conn.execute("SELECT EXISTS(SELECT 1 FROM members WHERE LOWER(username) = LOWER('{user}'))".format(user=userToRemove)).fetchone()[0] == False:
+				await message.channel.send('{user} was not found!'.format(user=userToRemove))
+			else:
+				conn.execute("DELETE FROM members WHERE lower(username) = LOWER('{user}')".format(user=userToRemove))
+				await message.channel.send('{user} has been successfully removed from the clan sheet!'.format(user=userToRemove))
+			conn.close()
+		else:
+			await message.channel.send('You don\'t have the required role!')
 	
 
 
