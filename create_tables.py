@@ -21,6 +21,12 @@ def setup_members_table(url,clansheetData=None):
 	engine.dispose()
 
 
+def setup_clanfund_table(url):
+	engine = create_engine(url, echo = False, poolclass=NullPool)
+	engine.execute("CREATE TABLE IF NOT EXISTS clanfund (username text PRIMARY KEY, amount int, last_updated timestamp)")
+	engine.dispose()
+
+
 # This function loads the previous data from the csv into a dataframe
 # Returns a dataframe
 def import_clansheet(filename):
@@ -32,6 +38,7 @@ def import_clansheet(filename):
 	return clanData
 
 
+
 def main():
 	filename = "clansheet.csv"
 	url = os.getenv('url')
@@ -39,6 +46,8 @@ def main():
 
 	clansheetData = import_clansheet(filename)
 	setup_members_table(url,clansheetData)
+
+	setup_clanfund_table(url)
 
 
 if __name__ == '__main__':
