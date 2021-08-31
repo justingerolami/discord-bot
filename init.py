@@ -153,5 +153,57 @@ async def on_message(message):
 
 
 
+	if message.content.startswith('$updatefund'):
+		msg = message.content[12:]
+		msgContent = [x.strip() for x in msg.split(',')]
+
+		if len(msgContent) != 2:
+			await message.channel.send('Error: You need to add 2 fields separated with 1 comma.'\
+				' For example: $updatefund name,amount')
+			return
+
+		if any(role.id in reqRoles for role in message.author.roles):
+			conn = db.connect()
+			date = datetime.now().date()
+			username = msgContent[0].lower()
+			amt = int(msgContent[1].replace(',', ''))
+
+			#They don't already exist in the table so add them and the value
+			if conn.execute("SELECT EXISTS(SELECT 1 FROM clanfund WHERE LOWER(username) = LOWER('{username}'))".format(username=username)).fetchone()[0] == False:
+				conn.execute("INSERT INTO clanfund(username, amount, last_updated) VALUES('{username}', {amt}, '{date}') ".format(username=username, amt=amt,date=date))
+				await message.channel.send('{username} was successfully added to the clanfund database.'.format(username=username))
+			else:
+				#since the user will enter -# for removing, we can just use + here
+				conn.execute("UPDATE clanfund SET amount=amount+{amt} WHERE username='{username}'".format(amt=amt, username=username))
+			conn.close()
+
+			if amt <0:
+				await message.channel.send('You removed {:,d} GP from the clan fund!'.format(abs(amt)))
+			elif amt>0:
+				await message.channel.send('You added {:,d} GP to the clan fund!'.format(amt))
+			else:
+				await message.channel.send('You didn\'t do anything to the clan fund! Go make some GP!')
+
+		else:
+			await message.channel.send('You don\'t have the required role!')
+			
+
+	if message.content.startswith('$detailfund'):
+		if any(role.id in reqRoles for role in message.author.roles):
+			conn = db.connect()
+			fund = conn.execute("SELECT * FROM clanfund WHERE amount != 0").fetchall()
+			conn.close()
+			[await message.channel.send("As of {date}, {username} has {amt:,} GP.".format(date=x[2].strftime('%b %d, %Y'), username=x[0], amt=x[1])) for x in fund]
+			await message.channel.send('There is a total of {amt:,} GP in the clan fund!'.format(amt=sum([x[1] for x in fund])))
+		else:
+			await message.channel.send('You don\'t have the required role!')
+
+
+	if message.content.startswith('$clanfund'):
+		conn = db.connect()
+		gp = conn.execute("SELECT SUM(amount) FROM clanfund").fetchone()
+		conn.close()
+		await message.channel.send('There is a total of {gp:,} GP in the clan fund!'.format(gp=gp[0]))
+
 client.run(TOKEN)
 db.dispose()
