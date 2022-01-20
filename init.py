@@ -91,6 +91,17 @@ async def on_message(message):
 		conn.close()
 
 
+	if message.content.startswith('$setID'):
+		username = message.content[7:]
+		discordID = message.author.id
+		conn = db.connect()
+		if conn.execute("SELECT EXISTS(SELECT 1 FROM members WHERE LOWER(username) = LOWER('{username}'))".format(username=username)).fetchone()[0] == True:
+			result = conn.execute("UPDATE members SET discordID={discordID} WHERE LOWER(username) = LOWER('{username}')".format(discordID=discordID,username=username))
+			await message.channel.send('Your ID has been successfully assigned to {username}.'.format(username=username))
+		else:
+			await message.channel.send('Username not found. Please enter the name when you applied. \n' \
+										'You may also use $contains to search a part of your name \n')
+		conn.close()
 
 
 
