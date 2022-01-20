@@ -8,12 +8,14 @@ from dotenv import load_dotenv
 # Load the variables from .env
 load_dotenv()
 
-TOKEN = os.getenv('TOKEN')
+#Github Secrets
+TOKEN = os.environ['TOKEN']
+url = os.environ['url']
+
 NOBLES = int(os.getenv('NOBLES'))
 MODS = int(os.getenv('MODERATORS'))
 ADMIN = int(os.getenv('ADMIN'))
-clansheet = os.getenv('clansheet')
-url = os.getenv('url')
+
 
 reqRoles = [NOBLES,MODS,ADMIN]
 
