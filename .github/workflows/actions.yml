@@ -1,0 +1,5 @@
+- name: execute py script
+        env: 
+          TOKEN: ${{ secrets.TOKEN }}
+          url: ${{ secrets.url }}
+        run: python init.py
