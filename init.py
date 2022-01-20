@@ -44,17 +44,23 @@ async def on_message(message):
 		return
 
 	if message.content.startswith('$length'):
-		username = message.content[8:]
+		if len(message.content) >= 8:
+			username = message.content[8:]
+		else:
+			username = ''
+		discordID = message.author.id
+
 		try:
 			#connect to the database
 			conn = db.connect()
 
 			#query for the joined date and the age of the user
-			result = conn.execute("SELECT joined, AGE(joined) FROM members WHERE LOWER(username) = LOWER('{username}')".format(username=username)).fetchone()
+			result = conn.execute("SELECT username,joined, AGE(joined) FROM members WHERE LOWER(username) = LOWER('{username}') OR discordID = '{discordID}'".format(username=username, discordID=discordID)).fetchone()
 
 			#convert to nice format
-			niceJoinedDate = result[0].strftime('%b %d, %Y')
-			numDays = result[1].days
+			dbusername = result[0]
+			niceJoinedDate = result[1].strftime('%b %d, %Y')
+			numDays = result[2].days
 
 			#Calculate the rank and days until promotion
 			rank,daysUntilRank = mf.calculate_rank(numDays)
@@ -67,12 +73,13 @@ async def on_message(message):
 			#send message to the channel
 			await message.channel.send('{name}, you\'ve been a member for {days} days. You Joined on {joinedDate}.\n'\
 			 							'Your rank should be {currentRank}!\n'\
-			 							'{rankMsg}'.format(name=username,days=numDays, joinedDate=niceJoinedDate, currentRank=rank, rankMsg=rankMsg))
+			 							'{rankMsg}'.format(name=dbusername,days=numDays, joinedDate=niceJoinedDate, currentRank=rank, rankMsg=rankMsg))
 			conn.close()
 
 		except Exception as e:
-			await message.channel.send('Username not found. Please enter the name when you applied. \n' \
-										'You may also use $contains to search a part of your name \n')
+			await message.channel.send('Username or discordID not found. Please enter the name when you applied. \n' \
+										'You may use "$contains partOfUsername" to search a part of your name. \n' \
+										'You may use "$setID username" to set your discord ID.')
 			print(e)
 		
 
@@ -102,6 +109,7 @@ async def on_message(message):
 			await message.channel.send('Username not found. Please enter the name when you applied. \n' \
 										'You may also use $contains to search a part of your name \n')
 		conn.close()
+	
 
 
 

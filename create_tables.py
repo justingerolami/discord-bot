@@ -11,13 +11,10 @@ load_dotenv()
 
 # This function creates the "members" table in the database
 # It also populates the database with previous data from the clan csv
-def setup_members_table(url,clansheetData=None):
+def setup_members_table(url,clansheetData):
 	engine = create_engine(url, echo = False,poolclass=NullPool)
-	engine.execute("CREATE TABLE IF NOT EXISTS members (username text PRIMARY KEY, joined timestamp)")
-	
-	if clansheetData not None:
-		clansheetData.to_sql('members', con = engine, if_exists='append',index=False)
-	
+	engine.execute('''CREATE TABLE IF NOT EXISTS members (username text PRIMARY KEY, discordID text NULL, joined timestamp)''')
+	clansheetData.to_sql('members', con = engine, if_exists='append',index=False)
 	engine.dispose()
 
 
@@ -40,13 +37,12 @@ def import_clansheet(filename):
 
 
 def main():
-	filename = "clansheet.csv"
+	filename = "nb.csv"
 	url = os.getenv('url')
-	clansheet = os.getenv('clansheet')
 
 	clansheetData = import_clansheet(filename)
+	
 	setup_members_table(url,clansheetData)
-
 	setup_clanfund_table(url)
 
 
