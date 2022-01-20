@@ -11,6 +11,7 @@ load_dotenv()
 #Github
 TOKEN = os.environ['TOKEN']
 url = os.environ['URL']
+clansheet = os.environ['CLANSHEET']
 
 NOBLES = int(os.getenv('NOBLES'))
 MODS = int(os.getenv('MODERATORS'))
@@ -265,7 +266,7 @@ async def on_message(message):
 		conn.close()
 		await message.channel.send('There is a total of {gp:,} GP in the clan fund!'.format(gp=gp[0]))
 
-	
+
 	if message.content.startswith('$help'):
 			await message.channel.send("I currently know the following commands:\n"\
 				"1. $total - how many members we have.\n"
@@ -281,6 +282,11 @@ async def on_message(message):
 				await message.channel.send("I currently know the following admin commands:\n"\
 				"8. $new username - adds a new user to the spreadsheet.\n"\
 				"9. $updatefund user,amt - adds or removes funds. To remove, use negative amt.\n")
+
+
+
+
+
 
 client.run(TOKEN)
 db.dispose()
