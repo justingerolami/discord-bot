@@ -111,6 +111,27 @@ async def on_message(message):
 			await message.channel.send('Username not found. Please enter the name when you applied. \n' \
 										'You may also use $contains to search a part of your name \n')
 		conn.close()
+
+	if message.content.startswith('$assignID'):
+		msg = message.content[10:]
+		if any(role.id in reqRoles for role in message.author.roles):
+
+			result = [x.strip() for x in msg.split(',')]
+
+			username = result[0]
+			discordID = result[1]
+
+			conn = db.connect()
+			if conn.execute("SELECT EXISTS(SELECT 1 FROM members WHERE LOWER(username) = LOWER('{username}'))".format(username=username)).fetchone()[0] == True:
+				result = conn.execute("UPDATE members SET discordID={discordID} WHERE LOWER(username) = LOWER('{username}')".format(discordID=discordID,username=username))
+				await message.channel.send('ID {discordID} has been successfully assigned to {username}.'.format(discordID=discordID,username=username))
+			else:
+				await message.channel.send('Username not found. Please enter the name when you applied. \n' \
+										'You may also use $contains to search a part of your name \n')
+			conn.close()
+		else:
+			await message.channel.send('You don\'t have the required role!')
+
 	
 
 
@@ -243,6 +264,23 @@ async def on_message(message):
 		gp = conn.execute("SELECT SUM(amount) FROM clanfund").fetchone()
 		conn.close()
 		await message.channel.send('There is a total of {gp:,} GP in the clan fund!'.format(gp=gp[0]))
+
+	
+	if message.content.startswith('$help'):
+			await message.channel.send("I currently know the following commands:\n"\
+				"1. $total - how many members we have.\n"
+				"2. $setID username - sets your unique discord ID in the database.\n"\
+				"3. $length - checks how long you have been a member (only if ID is set).\n"\
+				"4. $length username - checks how long the user has been a member.\n"\
+				"5. $contains partOfUsername - assists with finding a username you may have fully forgetten.\n"\
+				"6. $updatename old,new - updates your username on our tracker.\n"\
+				"7. $clanfund - checks how much GP is in the clan fund.\n"\
+				"\nFor any additional help or suggestions, please message Noble Gaels.")
+				
+			if any(role.id in reqRoles for role in message.author.roles):
+				await message.channel.send("I currently know the following admin commands:\n"\
+				"8. $new username - adds a new user to the spreadsheet.\n"\
+				"9. $updatefund user,amt - adds or removes funds. To remove, use negative amt.\n")
 
 client.run(TOKEN)
 db.dispose()
