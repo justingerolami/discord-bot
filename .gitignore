@@ -130,3 +130,5 @@ dmypy.json
 
 # Custom
 vars.py
+clansheet.csv
+postgres.ipynb
