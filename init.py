@@ -9,8 +9,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 #Github Secrets
-TOKEN = os.environ['TOKEN']
-url = os.environ['url']
+TOKEN = {{ secrets.TOKEN }}
+url = {{ secrets.url }}
 
 NOBLES = int(os.getenv('NOBLES'))
 MODS = int(os.getenv('MODERATORS'))
