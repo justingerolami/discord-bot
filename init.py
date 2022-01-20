@@ -8,9 +8,9 @@ from dotenv import load_dotenv
 # Load the variables from .env
 load_dotenv()
 
-#Github Secrets
-TOKEN = {{ secrets.TOKEN }}
-url = {{ secrets.url }}
+#Github
+TOKEN = os.environ['TOKEN']
+url = os.environ['DATABASE_URL']
 
 NOBLES = int(os.getenv('NOBLES'))
 MODS = int(os.getenv('MODERATORS'))
