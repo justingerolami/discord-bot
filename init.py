@@ -10,7 +10,7 @@ load_dotenv()
 
 #Github
 TOKEN = os.environ['TOKEN']
-url = os.environ['DATABASE_URL']
+url = os.environ['URL']
 
 NOBLES = int(os.getenv('NOBLES'))
 MODS = int(os.getenv('MODERATORS'))
