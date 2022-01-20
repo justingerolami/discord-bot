@@ -71,8 +71,26 @@ async def on_message(message):
 			conn.close()
 
 		except Exception as e:
-			await message.channel.send('Username not found. Please enter the name when you applied.')
+			await message.channel.send('Username not found. Please enter the name when you applied. \n' \
+										'You may also use $contains to search a part of your name \n')
 			print(e)
+		
+
+	if message.content.startswith('$contains'):
+		username = message.content[10:]
+		conn = db.connect()
+		result = conn.execute("SELECT username FROM members WHERE username ilike '%%{username}%%'".format(username=username)).fetchall()
+		users = sorted([user[0] for user in result],key=str.casefold)
+
+		if len(users)>0:
+			await message.channel.send('Here is a list of names that contain {username}: \n'.format(username=username))
+			userString = '\n'.join(users)
+			await message.channel.send(userString)
+		else:
+			await message.channel.send('No users contained string {username}.'.format(username=username))
+		conn.close()
+
+
 
 
 

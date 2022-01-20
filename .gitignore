@@ -132,3 +132,4 @@ dmypy.json
 vars.py
 clansheet.csv
 postgres.ipynb
+nb.csv
