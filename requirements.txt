@@ -2,3 +2,4 @@ discord
 SQLAlchemy
 python-dotenv
 DateTime
+psycopg2
