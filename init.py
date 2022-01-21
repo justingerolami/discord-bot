@@ -334,7 +334,7 @@ async def apply(ctx):
 		if "submit" in msg.content.lower():
 			submit_wait = False
 			answers = "\n".join(f'{a}. {b}' for a, b in enumerate(a_list, 1))
-			if "noblebros" in answers.lower():
+			if "noblebros" in answers.lower() or "noble bros" in answers.lower():
 				conn = db.connect()
 				if conn.execute("SELECT EXISTS(SELECT 1 FROM members WHERE LOWER(username) = LOWER('{user}'))".format(user=userToAdd)).fetchone()[0] == False:
 					conn.execute("INSERT INTO members(username,joined,discordID) VALUES('{user}','{date}', '{discordID}')".format(user=userToAdd,date=date, discordID=discordID))
@@ -349,9 +349,9 @@ async def apply(ctx):
 				await ctx.author.add_roles(role)
 
 				embed=discord.Embed(title="**Application for Noble Bros: " + userToAdd+"**", description="This is the application for NobleBros sent by " + userToAdd, color=0x04ff00)
-				embed.add_field(name="**DISCORD ID?**", value=discordID, inline=True)
 				embed.add_field(name="**RSN?**", value=a_list[0], inline=True)
-				embed.add_field(name="**COMBAT LVL?**", value=a_list[1], inline=True)
+				embed.add_field(name="**DISCORD ID?**", value=discordID, inline=True)
+				embed.add_field(name="**COMBAT LVL?**", value=a_list[1], inline=False)
 				embed.add_field(name="**TOTAL LVL?**", value=a_list[2], inline=True)
 				embed.add_field(name="**THEIR FAVORITE THING TO DO ON OSRS?**", value=a_list[3], inline=False)
 				embed.add_field(name="**HOW THEY HEARD ABOUT US?**", value=a_list[4], inline=False)
@@ -364,9 +364,9 @@ async def apply(ctx):
 									"Please review the rules and reapply.")
 				
 				embed=discord.Embed(title="**Application for Noble Bros: " + userToAdd+"**", description="This is the application for NobleBros sent by " + userToAdd, color=0xff0000)
-				embed.add_field(name="**DISCORD ID?**", value=discordID, inline=True)
 				embed.add_field(name="**RSN?**", value=a_list[0], inline=True)
-				embed.add_field(name="**COMBAT LVL?**", value=a_list[1], inline=True)
+				embed.add_field(name="**DISCORD ID?**", value=discordID, inline=True)
+				embed.add_field(name="**COMBAT LVL?**", value=a_list[1], inline=False)
 				embed.add_field(name="**TOTAL LVL?**", value=a_list[2], inline=True)
 				embed.add_field(name="**THEIR FAVORITE THING TO DO ON OSRS?**", value=a_list[3], inline=False)
 				embed.add_field(name="**HOW THEY HEARD ABOUT US?**", value=a_list[4], inline=False)
