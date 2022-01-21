@@ -329,7 +329,7 @@ async def apply(ctx):
 
 	submit_wait = True
 	while submit_wait:
-		await channel.send('End of questions - type "submit" to finish')
+		await channel.send('End of questions - type "submit" to finish or "quit" to cancel.')
 		msg = await client.wait_for('message', check=check)
 		if "submit" in msg.content.lower():
 			submit_wait = False
@@ -374,6 +374,7 @@ async def apply(ctx):
 				embed.add_field(name="**DID THEY READ THE RULES?**", value=a_list[6], inline=False)
 				await submit_channel.send(embed=embed)
 		elif 'quit' in msg.content.lower():
+			await channel.send("Please feel free to apply again when you're ready!")
 			break
 
 
