@@ -1,5 +1,7 @@
 import os
 import discord
+from discord.ext.commands import Bot
+from discord.utils import get
 import member_functions as mf
 from sqlalchemy import create_engine
 from datetime import datetime
@@ -13,14 +15,18 @@ TOKEN = os.environ['TOKEN']
 url = os.environ['URL']
 clansheet = os.environ['CLANSHEET']
 
+
 NOBLES = int(os.getenv('NOBLES'))
 MODS = int(os.getenv('MODERATORS'))
 ADMIN = int(os.getenv('ADMIN'))
+NEWMEMBER = int(os.getenv('NEWMEMBER'))
 
 
 reqRoles = [NOBLES,MODS,ADMIN]
 
-client = discord.Client()
+client=Bot(command_prefix="$")
+
+#client = discord.Client()
 db = create_engine(url, echo = False)
 
 # When the bot connects to Discord
@@ -43,22 +49,30 @@ async def on_member_join(member):
 
 @client.event
 async def on_message(message):
+	
+
 	if message.author == client.user:
 		return
 
 	if message.content.startswith('$length'):
-		if len(message.content) >= 8:
-			username = message.content[8:]
-		else:
+		if len(message.content) == 7:
 			username = ''
-		discordID = message.author.id
+			discordID = message.author.id
+		else:
+			username = message.content[8:]
+			discordID = -1
+
+	
+		#hack because admin may look up by someone else's ID
+		if username == message.author.id:
+			discordID = username
 
 		try:
 			#connect to the database
 			conn = db.connect()
 
 			#query for the joined date and the age of the user
-			result = conn.execute("SELECT username,joined, AGE(joined) FROM members WHERE LOWER(username) = LOWER('{username}') OR discordID = '{discordID}'".format(username=username, discordID=discordID)).fetchone()
+			result = conn.execute("SELECT username,joined, AGE(joined) FROM members WHERE LOWER(username) = LOWER('{username}') OR discordID = '{username}' OR discordID = '{discordID}'".format(username=username, discordID=discordID)).fetchone()
 
 			#convert to nice format
 			dbusername = result[0]
@@ -83,7 +97,6 @@ async def on_message(message):
 			await message.channel.send('Username or discordID not found. Please enter the name when you applied. \n' \
 										'You may use "$contains partOfUsername" to search a part of your name. \n' \
 										'You may use "$setID username" to set your discord ID.')
-			print(e)
 		
 
 	if message.content.startswith('$contains'):
@@ -280,11 +293,84 @@ async def on_message(message):
 				
 			if any(role.id in reqRoles for role in message.author.roles):
 				await message.channel.send("I currently know the following admin commands:\n"\
-				"8. $new username - adds a new user to the spreadsheet.\n"\
-				"9. $updatefund user,amt - adds or removes funds. To remove, use negative amt.\n")
+				"8. $new username - adds a new user to the database.\n"\
+				"9. $remove username - remove a user from the database"
+				"10. $updatefund user,amt - adds or removes funds. To remove, use negative amt.\n")
+	await client.process_commands(message)
 
 
 
+@client.command()
+async def apply(ctx):
+	q_list = [
+    	'What is your RSN?',
+		'What is your combat level?',
+    	'What is your total level?',
+		'What is your favorite thing to do in OSRS?',
+		'How did you hear about us?',
+		'Are you listed on any ban lists (WDR, Runewatch, Sythe, etc)?',
+		'Have you read the <#638098870378823694> page? **If you do not follow instructions ' \
+		'on that page, your application will be auto-denied.**']
+	a_list = []
+	submit_channel = client.get_channel(739285627190640780)
+	channel = await ctx.author.create_dm()
+
+	def check(m):
+		return m.content is not None and m.channel == channel and m.author.id== ctx.author.id
+
+	for question in q_list:
+		await channel.send(question)
+		msg = await client.wait_for('message', check=check)
+		a_list.append(msg.content)
+
+	userToAdd = a_list[0]
+	date = datetime.now().date()
+	discordID = ctx.author.id
+
+	submit_wait = True
+	while submit_wait:
+		await channel.send('End of questions - type "submit" to finish')
+		msg = await client.wait_for('message', check=check)
+		if "submit" in msg.content.lower():
+			submit_wait = False
+			answers = "\n".join(f'{a}. {b}' for a, b in enumerate(a_list, 1))
+			if "noblebros" in answers.lower():
+				conn = db.connect()
+				if conn.execute("SELECT EXISTS(SELECT 1 FROM members WHERE LOWER(username) = LOWER('{user}'))".format(user=userToAdd)).fetchone()[0] == False:
+					conn.execute("INSERT INTO members(username,joined,discordID) VALUES('{user}','{date}', '{discordID}')".format(user=userToAdd,date=date, discordID=discordID))
+				else:
+					await channel.send('Welcome back to Noble Bros! You are already in our database.')
+					conn.execute("UPDATE members SET discordID={discordID} WHERE LOWER(username) = LOWER('{user}')".format(discordID=discordID,user=userToAdd))
+
+				await channel.send("Thank you for completing the application. You have been accepted and assigned your role! \n"\
+									"Please wait for an admin to add you in game.")
+
+				role = ctx.guild.get_role(NEWMEMBER)
+				await ctx.author.add_roles(role)
+
+				embed=discord.Embed(title="**Application for Noble Bros: " + userToAdd+"**", description="This is the application for NobleBros, sent by " + userToAdd, color=0x04ff00)
+				embed.add_field(name="**RSN?**", value=a_list[0], inline=True)
+				embed.add_field(name="**COMBAT LVL?**", value=a_list[1], inline=True)
+				embed.add_field(name="**TOTAL LVL?**", value=a_list[2], inline=True)
+				embed.add_field(name="**THEIR FAVORITE THING TO DO ON OSRS?**", value=a_list[3], inline=False)
+				embed.add_field(name="**HOW THEY HEARD ABOUT US?**", value=a_list[4], inline=False)
+				embed.add_field(name="**ARE THEY ON ANY BANLISTS (VERIFY MANUALLY)?**", value=a_list[5], inline=False)
+				embed.add_field(name="**DID THEY READ THE RULES?**", value=a_list[6], inline=False)
+				await submit_channel.send(embed=embed)
+
+			else:
+				await channel.send("You did not follow the instructions in <#638098870378823694>. \n"\
+									"Please review the rules and reapply.")
+				
+				embed=discord.Embed(title="**Application for Noble Bros: " + userToAdd+"**", description="This is the application for NobleBros, sent by " + userToAdd, color=0xff0000)
+				embed.add_field(name="**RSN?**", value=a_list[0], inline=True)
+				embed.add_field(name="**COMBAT LVL?**", value=a_list[1], inline=True)
+				embed.add_field(name="**TOTAL LVL?**", value=a_list[2], inline=True)
+				embed.add_field(name="**THEIR FAVORITE THING TO DO ON OSRS?**", value=a_list[3], inline=False)
+				embed.add_field(name="**HOW THEY HEARD ABOUT US?**", value=a_list[4], inline=False)
+				embed.add_field(name="**ARE THEY ON ANY BANLISTS (VERIFY MANUALLY)?**", value=a_list[5], inline=False)
+				embed.add_field(name="**DID THEY READ THE RULES?**", value=a_list[6], inline=False)
+				await submit_channel.send(embed=embed)
 
 
 
