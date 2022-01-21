@@ -373,7 +373,8 @@ async def apply(ctx):
 				embed.add_field(name="**ARE THEY ON ANY BANLISTS (VERIFY MANUALLY)?**", value=a_list[5], inline=False)
 				embed.add_field(name="**DID THEY READ THE RULES?**", value=a_list[6], inline=False)
 				await submit_channel.send(embed=embed)
-
+		elif 'quit' in msg.content.lower():
+			break
 
 
 client.run(TOKEN)
