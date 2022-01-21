@@ -348,7 +348,8 @@ async def apply(ctx):
 				role = ctx.guild.get_role(NEWMEMBER)
 				await ctx.author.add_roles(role)
 
-				embed=discord.Embed(title="**Application for Noble Bros: " + userToAdd+"**", description="This is the application for NobleBros, sent by " + userToAdd, color=0x04ff00)
+				embed=discord.Embed(title="**Application for Noble Bros: " + userToAdd+"**", description="This is the application for NobleBros sent by " + userToAdd, color=0x04ff00)
+				embed.add_field(name="**DISCORD ID?**", value=discordID, inline=True)
 				embed.add_field(name="**RSN?**", value=a_list[0], inline=True)
 				embed.add_field(name="**COMBAT LVL?**", value=a_list[1], inline=True)
 				embed.add_field(name="**TOTAL LVL?**", value=a_list[2], inline=True)
@@ -362,7 +363,8 @@ async def apply(ctx):
 				await channel.send("You did not follow the instructions in <#638098870378823694>. \n"\
 									"Please review the rules and reapply.")
 				
-				embed=discord.Embed(title="**Application for Noble Bros: " + userToAdd+"**", description="This is the application for NobleBros, sent by " + userToAdd, color=0xff0000)
+				embed=discord.Embed(title="**Application for Noble Bros: " + userToAdd+"**", description="This is the application for NobleBros sent by " + userToAdd, color=0xff0000)
+				embed.add_field(name="**DISCORD ID?**", value=discordID, inline=True)
 				embed.add_field(name="**RSN?**", value=a_list[0], inline=True)
 				embed.add_field(name="**COMBAT LVL?**", value=a_list[1], inline=True)
 				embed.add_field(name="**TOTAL LVL?**", value=a_list[2], inline=True)
