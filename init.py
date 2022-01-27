@@ -44,7 +44,7 @@ async def on_member_join(member):
 	await member.create_dm()
 	await member.dm_channel.send(
 		("Welcome to Noble Bros, {member_name}! If you wish to officially join and participate in clan events,"\
-		" please fill out the clan app by typing '$apply' (without the quotation) here: <#638099028365672448>."\
+		" please fill out the clan app by clicking the button here: <#936082496989315134>."\
 		" Please change your server nickname to match your rsn by clicking the arrow beside"\
 		" noble bros 2.0' -> 'change nickname'."\
 		" If you have any questions, please message one of the admins listed under 'member list'.").format(member_name=member.mention))
@@ -297,8 +297,9 @@ async def on_message(message):
 			if any(role.id in reqRoles for role in message.author.roles):
 				await message.channel.send("I currently know the following admin commands:\n"\
 				"8. $new username - adds a new user to the database.\n"\
-				"9. $remove username - remove a user from the database"
-				"10. $updatefund user,amt - adds or removes funds. To remove, use negative amt.\n")
+				"9. $remove username - remove a user from the database\n"\
+				"10. $assignID username,id - sets a users discord ID\n"\
+				"11. $updatefund user,amt - adds or removes funds. To remove, use negative amt.\n")
 	await client.process_commands(message)
 
 
