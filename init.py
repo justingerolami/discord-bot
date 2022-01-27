@@ -1,7 +1,9 @@
+from asynchat import async_chat
 import os
 import discord
 from discord.ext.commands import Bot
 from discord.utils import get
+from discord.ui import Button, View
 import member_functions as mf
 from sqlalchemy import create_engine
 from datetime import datetime
@@ -14,6 +16,7 @@ load_dotenv()
 TOKEN = os.environ['TOKEN']
 url = os.environ['URL']
 clansheet = os.environ['CLANSHEET']
+
 
 
 NOBLES = int(os.getenv('NOBLES'))
@@ -119,7 +122,7 @@ async def on_message(message):
 		discordID = message.author.id
 		conn = db.connect()
 		if conn.execute("SELECT EXISTS(SELECT 1 FROM members WHERE LOWER(username) = LOWER('{username}'))".format(username=username)).fetchone()[0] == True:
-			result = conn.execute("UPDATE members SET discordID={discordID} WHERE LOWER(username) = LOWER('{username}')".format(discordID=discordID,username=username))
+			result = conn.execute("UPDATE members SET discordID='{discordID}' WHERE LOWER(username) = LOWER('{username}')".format(discordID=discordID,username=username))
 			await message.channel.send('Your ID has been successfully assigned to {username}.'.format(username=username))
 		else:
 			await message.channel.send('Username not found. Please enter the name when you applied. \n' \
@@ -137,7 +140,7 @@ async def on_message(message):
 
 			conn = db.connect()
 			if conn.execute("SELECT EXISTS(SELECT 1 FROM members WHERE LOWER(username) = LOWER('{username}'))".format(username=username)).fetchone()[0] == True:
-				result = conn.execute("UPDATE members SET discordID={discordID} WHERE LOWER(username) = LOWER('{username}')".format(discordID=discordID,username=username))
+				result = conn.execute("UPDATE members SET discordID='{discordID}' WHERE LOWER(username) = LOWER('{username}')".format(discordID=discordID,username=username))
 				await message.channel.send('ID {discordID} has been successfully assigned to {username}.'.format(discordID=discordID,username=username))
 			else:
 				await message.channel.send('Username not found. Please enter the name when you applied. \n' \
@@ -299,83 +302,162 @@ async def on_message(message):
 	await client.process_commands(message)
 
 
-
 @client.command()
-async def apply(ctx):
-	q_list = [
-    	'What is your RSN?',
-		'What is your combat level?',
-    	'What is your total level?',
-		'What is your favorite thing to do in OSRS?',
-		'How did you hear about us?',
-		'Are you listed on any ban lists (WDR, Runewatch, Sythe, etc)?',
-		'Have you read the <#638098870378823694> page? **If you do not follow instructions ' \
-		'on that page, your application will be auto-denied.**']
-	a_list = []
+async def apply_button(ctx):
+
+	
 	submit_channel = client.get_channel(739285627190640780)
-	channel = await ctx.author.create_dm()
 
-	def check(m):
-		return m.content is not None and m.channel == channel and m.author.id== ctx.author.id
+	new_member_button = Button(label="New Member Application", style=discord.ButtonStyle.primary)
+	old_member_button = Button(label="Previous Member Application", style=discord.ButtonStyle.green)
+       
+	async def new_member_callback(interaction):
+		q_list = [
+			'What is your RSN?',
+			'What is your combat level?',
+			'What is your total level?',
+			'What is your favorite thing to do in OSRS?',
+			'How did you hear about us?',
+			'Are you listed on any ban lists (WDR, Runewatch, Sythe, etc)?',
+			'Have you read the <#638098870378823694> page? **If you do not follow instructions ' \
+			'on that page, your application will be auto-denied.**']
+		a_list = []
+		await interaction.response.defer()
+		#await interaction.response.send_message(interaction.user.id)
+		channel = await interaction.user.create_dm()
 
-	for question in q_list:
-		await channel.send(question)
-		msg = await client.wait_for('message', check=check)
-		a_list.append(msg.content)
+		def check(m):
+			return m.content is not None and m.channel == channel and m.author.id== interaction.user.id
 
-	userToAdd = a_list[0]
-	date = datetime.now().date()
-	discordID = ctx.author.id
+		for question in q_list:
+			await channel.send(question)
+			msg = await client.wait_for('message', check=check)
+			a_list.append(msg.content)
 
-	submit_wait = True
-	while submit_wait:
-		await channel.send('End of questions - type "submit" to finish or "quit" to cancel.')
-		msg = await client.wait_for('message', check=check)
-		if "submit" in msg.content.lower():
-			submit_wait = False
-			answers = "\n".join(f'{a}. {b}' for a, b in enumerate(a_list, 1))
-			if "noblebros" in answers.lower() or "noble bros" in answers.lower():
-				conn = db.connect()
-				if conn.execute("SELECT EXISTS(SELECT 1 FROM members WHERE LOWER(username) = LOWER('{user}'))".format(user=userToAdd)).fetchone()[0] == False:
-					conn.execute("INSERT INTO members(username,joined,discordID) VALUES('{user}','{date}', '{discordID}')".format(user=userToAdd,date=date, discordID=discordID))
+		userToAdd = a_list[0]
+		date = datetime.now().date()
+		discordID = interaction.user.id
+
+		submit_wait = True
+		while submit_wait:
+			await channel.send('End of questions - type "submit" to finish or "quit" to cancel.')
+			msg = await client.wait_for('message', check=check)
+			if "submit" in msg.content.lower():
+				submit_wait = False
+				answers = "\n".join(f'{a}. {b}' for a, b in enumerate(a_list, 1))
+				if "noblebros" in answers.lower() or "noble bros" in answers.lower():
+					conn = db.connect()
+					if (conn.execute("SELECT EXISTS(SELECT 1 FROM members WHERE LOWER(username) = LOWER('{user}'))".format(user=userToAdd)).fetchone()[0] == False) and (conn.execute("SELECT EXISTS(SELECT 1 FROM members WHERE discordID = '{discordID}')".format(discordID=discordID)).fetchone()[0] == False):
+						conn.execute("INSERT INTO members(username,joined,discordID) VALUES('{user}','{date}', '{discordID}')".format(user=userToAdd,date=date, discordID=discordID))
+					else:
+						await channel.send('Welcome back to Noble Bros! You are already in our database. \n'\
+											'Please use the Previous Member Application instead.')
+						break
+
+					await channel.send("Thank you for completing the application. You have been accepted and assigned your role! \n"\
+										"Please wait for an admin to add you in game.")
+
+					role = interaction.guild.get_role(NEWMEMBER)
+					await interaction.user.add_roles(role)
+
+					embed=discord.Embed(title="**Application for Noble Bros: " + userToAdd+"**", description="This is the application for NobleBros sent by " + userToAdd, color=0x04ff00)
+					embed.add_field(name="**RSN?**", value=a_list[0], inline=True)
+					embed.add_field(name="**DISCORD ID?**", value=discordID, inline=True)
+					embed.add_field(name="**COMBAT LVL?**", value=a_list[1], inline=False)
+					embed.add_field(name="**TOTAL LVL?**", value=a_list[2], inline=True)
+					embed.add_field(name="**THEIR FAVORITE THING TO DO ON OSRS?**", value=a_list[3], inline=False)
+					embed.add_field(name="**HOW THEY HEARD ABOUT US?**", value=a_list[4], inline=False)
+					embed.add_field(name="**ARE THEY ON ANY BANLISTS (VERIFY MANUALLY)?**", value=a_list[5], inline=False)
+					embed.add_field(name="**DID THEY READ THE RULES?**", value=a_list[6], inline=False)
+					await submit_channel.send(embed=embed)
+
 				else:
-					await channel.send('Welcome back to Noble Bros! You are already in our database.')
-					conn.execute("UPDATE members SET discordID={discordID} WHERE LOWER(username) = LOWER('{user}')".format(discordID=discordID,user=userToAdd))
+					await channel.send("You did not follow the instructions in <#638098870378823694>. \n"\
+										"Please review the rules and reapply.")
+					
+					embed=discord.Embed(title="**Application for Noble Bros: " + userToAdd+"**", description="This is the application for NobleBros sent by " + userToAdd, color=0xff0000)
+					embed.add_field(name="**RSN?**", value=a_list[0], inline=True)
+					embed.add_field(name="**DISCORD ID?**", value=discordID, inline=True)
+					embed.add_field(name="**COMBAT LVL?**", value=a_list[1], inline=False)
+					embed.add_field(name="**TOTAL LVL?**", value=a_list[2], inline=True)
+					embed.add_field(name="**THEIR FAVORITE THING TO DO ON OSRS?**", value=a_list[3], inline=False)
+					embed.add_field(name="**HOW THEY HEARD ABOUT US?**", value=a_list[4], inline=False)
+					embed.add_field(name="**ARE THEY ON ANY BANLISTS (VERIFY MANUALLY)?**", value=a_list[5], inline=False)
+					embed.add_field(name="**DID THEY READ THE RULES?**", value=a_list[6], inline=False)
+					await submit_channel.send(embed=embed)
+			elif 'quit' in msg.content.lower():
+				await channel.send("Please feel free to apply again when you're ready!")
+				break
 
-				await channel.send("Thank you for completing the application. You have been accepted and assigned your role! \n"\
-									"Please wait for an admin to add you in game.")
 
-				role = ctx.guild.get_role(NEWMEMBER)
-				await ctx.author.add_roles(role)
+	async def old_member_callback(interaction):
+		a_list = []
+		q_list = [
+			'What is the username we have on file?',
+			'What is your current username?']
 
-				embed=discord.Embed(title="**Application for Noble Bros: " + userToAdd+"**", description="This is the application for NobleBros sent by " + userToAdd, color=0x04ff00)
-				embed.add_field(name="**RSN?**", value=a_list[0], inline=True)
-				embed.add_field(name="**DISCORD ID?**", value=discordID, inline=True)
-				embed.add_field(name="**COMBAT LVL?**", value=a_list[1], inline=False)
-				embed.add_field(name="**TOTAL LVL?**", value=a_list[2], inline=True)
-				embed.add_field(name="**THEIR FAVORITE THING TO DO ON OSRS?**", value=a_list[3], inline=False)
-				embed.add_field(name="**HOW THEY HEARD ABOUT US?**", value=a_list[4], inline=False)
-				embed.add_field(name="**ARE THEY ON ANY BANLISTS (VERIFY MANUALLY)?**", value=a_list[5], inline=False)
-				embed.add_field(name="**DID THEY READ THE RULES?**", value=a_list[6], inline=False)
-				await submit_channel.send(embed=embed)
+		await interaction.response.defer()
+		#await interaction.response.send_message(interaction.user.id)
+		channel = await interaction.user.create_dm()
+
+		def check(m):
+			return m.content is not None and m.channel == channel and m.author.id== interaction.user.id
+
+		discordID = interaction.user.id
+		conn = db.connect()
+		successfulRejoin = False
+
+		if conn.execute("SELECT EXISTS(SELECT 1 FROM members WHERE discordID = '{discordID}')".format(discordID=discordID)).fetchone()[0] == True:
+			await channel.send('Welcome back to Noble Bros! I\'ve found you in our database.')
+			result = conn.execute("SELECT username FROM members WHERE discordID = '{discordID}'".format(discordID=discordID)).fetchone()
+			dbusername = result[0]
+			a_list.append(dbusername)
+			await channel.send(q_list[1])
+			msg = await client.wait_for('message', check=check)
+			a_list.append(msg.content)
+			userToAdd = a_list[1]
+
+			conn.execute("UPDATE members SET username='{username}' WHERE discordID = '{discordID}' and LOWER(username) = LOWER('{oldUsername}')".format(discordID=discordID,username=userToAdd, oldUsername=dbusername))
+			successfulRejoin=True
+
+			
+		else:
+			for question in q_list:
+				await channel.send(question)
+				msg = await client.wait_for('message', check=check)
+				a_list.append(msg.content)
+
+			dbusername = a_list[0]
+			userToAdd = a_list[1]
+			
+			if conn.execute("SELECT EXISTS(SELECT 1 FROM members WHERE LOWER(username) = LOWER('{user}'))".format(user=dbusername)).fetchone()[0] == True:
+				conn.execute("UPDATE members SET discordID='{discordID}',username='{newUsername}' WHERE LOWER(username) = LOWER('{oldUsername}')".format(discordID=discordID,newUsername=userToAdd,oldUsername=dbusername))
+				successfulRejoin=True
 
 			else:
-				await channel.send("You did not follow the instructions in <#638098870378823694>. \n"\
-									"Please review the rules and reapply.")
-				
-				embed=discord.Embed(title="**Application for Noble Bros: " + userToAdd+"**", description="This is the application for NobleBros sent by " + userToAdd, color=0xff0000)
-				embed.add_field(name="**RSN?**", value=a_list[0], inline=True)
-				embed.add_field(name="**DISCORD ID?**", value=discordID, inline=True)
-				embed.add_field(name="**COMBAT LVL?**", value=a_list[1], inline=False)
-				embed.add_field(name="**TOTAL LVL?**", value=a_list[2], inline=True)
-				embed.add_field(name="**THEIR FAVORITE THING TO DO ON OSRS?**", value=a_list[3], inline=False)
-				embed.add_field(name="**HOW THEY HEARD ABOUT US?**", value=a_list[4], inline=False)
-				embed.add_field(name="**ARE THEY ON ANY BANLISTS (VERIFY MANUALLY)?**", value=a_list[5], inline=False)
-				embed.add_field(name="**DID THEY READ THE RULES?**", value=a_list[6], inline=False)
-				await submit_channel.send(embed=embed)
-		elif 'quit' in msg.content.lower():
-			await channel.send("Please feel free to apply again when you're ready!")
-			break
+				await channel.send("That username is not in our system.\n"\
+									"Please reapply with the username we have on file or apply as a new member.")
+		
+		if successfulRejoin == True:
+			await channel.send("You have been accepted and assigned your role! \n"\
+									"Please wait for an admin to add you in game.")
+
+			role = interaction.guild.get_role(NEWMEMBER)
+			await interaction.user.add_roles(role)
+
+			embed=discord.Embed(title="**Rejoin Application for Noble Bros: " + userToAdd+"**", description="This is the application for NobleBros sent by " + userToAdd, color=0x04ff00)
+			embed.add_field(name="**OLD RSN?**", value=a_list[0], inline=True)
+			embed.add_field(name="**NEW RSN?**", value=a_list[1], inline=True)
+			embed.add_field(name="**DISCORD ID?**", value=discordID, inline=True)
+			await submit_channel.send(embed=embed)
+					
+
+	new_member_button.callback = new_member_callback
+	old_member_button.callback = old_member_callback
+	app_view = View()
+	app_view.add_item(new_member_button)
+	app_view.add_item(old_member_button)
+	await ctx.send("Press the button to apply after you have read the rules in <#638098870378823694>",view=app_view)
 
 
 client.run(TOKEN)
