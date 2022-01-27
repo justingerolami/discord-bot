@@ -302,9 +302,9 @@ async def on_message(message):
 	await client.process_commands(message)
 
 
-@tasks.loop(hours=24)
+@tasks.loop(hours=1)
 async def apply_button(ctx):
-	hoursToSeconds = 24*60*60
+	hoursToSeconds = 1*60*60
 	
 	submit_channel = client.get_channel(739285627190640780)
 
