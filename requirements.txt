@@ -1,5 +1,5 @@
-discord
 SQLAlchemy
 python-dotenv
 DateTime
 psycopg2
+git+https://github.com/Rapptz/discord.py
