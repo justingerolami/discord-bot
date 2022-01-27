@@ -2,6 +2,7 @@ from asynchat import async_chat
 import os
 import discord
 from discord.ext.commands import Bot
+from discord.ext import tasks
 from discord.utils import get
 from discord.ui import Button, View
 import member_functions as mf
@@ -16,8 +17,6 @@ load_dotenv()
 TOKEN = os.environ['TOKEN']
 url = os.environ['URL']
 clansheet = os.environ['CLANSHEET']
-
-
 
 NOBLES = int(os.getenv('NOBLES'))
 MODS = int(os.getenv('MODERATORS'))
@@ -303,9 +302,9 @@ async def on_message(message):
 	await client.process_commands(message)
 
 
-@client.command()
+@tasks.loop(hours=24)
 async def apply_button(ctx):
-
+	hoursToSeconds = 24*60*60
 	
 	submit_channel = client.get_channel(739285627190640780)
 
@@ -458,8 +457,12 @@ async def apply_button(ctx):
 	app_view = View()
 	app_view.add_item(new_member_button)
 	app_view.add_item(old_member_button)
-	await ctx.send("Press the button to apply after you have read the rules in <#638098870378823694>",view=app_view)
+	await ctx.send("Press the button to apply after you have read the rules in <#638098870378823694>",view=app_view, delete_after=hoursToSeconds)
 
+@client.command()
+async def start_application(ctx):
+	await ctx.send(apply_button.start(ctx))
 
 client.run(TOKEN)
+
 db.dispose()
