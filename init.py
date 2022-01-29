@@ -13,16 +13,14 @@ from dotenv import load_dotenv
 # Load the variables from .env
 load_dotenv()
 
-#Github
+#Heroku keys
 TOKEN = os.environ['TOKEN']
 url = os.environ['URL']
 clansheet = os.environ['CLANSHEET']
-
-
-NOBLES = int(os.getenv('NOBLES'))
-MODS = int(os.getenv('MODERATORS'))
-ADMIN = int(os.getenv('ADMIN'))
-NEWMEMBER = int(os.getenv('NEWMEMBER'))
+NOBLES = int(os.environ['NOBLES'])
+MODS = int(os.environ['MODERATORS'])
+ADMIN = int(os.environ['ADMIN'])
+NEWMEMBER = int(os.environ['NEWMEMBER'])
 
 
 reqRoles = [NOBLES,MODS,ADMIN]
@@ -303,9 +301,8 @@ async def on_message(message):
 	await client.process_commands(message)
 
 
-@tasks.loop(hours=24)
+@client.command()
 async def apply_button(ctx):
-	hoursToSeconds = 24*60*60
 	
 	submit_channel = client.get_channel(739285627190640780)
 
@@ -456,14 +453,10 @@ async def apply_button(ctx):
 
 	new_member_button.callback = new_member_callback
 	old_member_button.callback = old_member_callback
-	app_view = View(timeout=hoursToSeconds)
+	app_view = View(timeout=None)
 	app_view.add_item(new_member_button)
 	app_view.add_item(old_member_button)
-	await ctx.send("Press the button to apply after you have read the rules in <#638098870378823694>",view=app_view, delete_after=hoursToSeconds)
-
-@client.command()
-async def start_application(ctx):
-	await ctx.send(apply_button.start(ctx))
+	await ctx.send("Press the button to apply after you have read the rules in <#638098870378823694>",view=app_view)
 
 client.run(TOKEN)
 

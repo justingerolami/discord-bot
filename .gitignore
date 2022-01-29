@@ -133,3 +133,4 @@ clansheet.csv
 postgres.ipynb
 nb.csv
 .localKeys
+.env
