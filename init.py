@@ -1,4 +1,4 @@
-from asynchat import async_chat
+import asyncio
 import os
 import discord
 from discord.ext.commands import Bot
@@ -303,12 +303,13 @@ async def on_message(message):
 
 @client.command()
 async def apply_button(ctx):
-	
+	timeout=5*60
 	submit_channel = client.get_channel(739285627190640780)
 
 	new_member_button = Button(label="New Member Application", style=discord.ButtonStyle.primary)
 	old_member_button = Button(label="Previous Member Application", style=discord.ButtonStyle.green)
-       
+	
+
 	async def new_member_callback(interaction):
 		q_list = [
 			'What is your RSN?',
@@ -320,7 +321,10 @@ async def apply_button(ctx):
 			'Have you read the <#638098870378823694> page? **If you do not follow instructions ' \
 			'on that page, your application will be auto-denied.**']
 		a_list = []
-		await interaction.response.defer()
+
+
+		#await interaction.response.defer()
+		await interaction.response.edit_message(content="Press the button to apply after you have read the rules in <#638098870378823694>")
 		#await interaction.response.send_message(interaction.user.id)
 		channel = await interaction.user.create_dm()
 
@@ -328,9 +332,14 @@ async def apply_button(ctx):
 			return m.content is not None and m.channel == channel and m.author.id== interaction.user.id
 
 		for question in q_list:
-			await channel.send(question)
-			msg = await client.wait_for('message', check=check)
-			a_list.append(msg.content)
+			try:
+				await channel.send(question)
+				msg = await client.wait_for('message', check=check, timeout=timeout)
+				a_list.append(msg.content)
+			except (asyncio.exceptions.TimeoutError, asyncio.exceptions.CancelledError):
+				await channel.send('Application has timed out. If you wish to continue, you will have to restart your application.')
+				return
+
 
 		userToAdd = a_list[0]
 		date = datetime.now().date()
@@ -394,7 +403,9 @@ async def apply_button(ctx):
 			'What is the username we have on file?',
 			'What is your current username?']
 
-		await interaction.response.defer()
+		#await interaction.response.defer()
+		await interaction.response.edit_message(content="Press the button to apply after you have read the rules in <#638098870378823694>")
+
 		#await interaction.response.send_message(interaction.user.id)
 		channel = await interaction.user.create_dm()
 
@@ -404,26 +415,34 @@ async def apply_button(ctx):
 		discordID = interaction.user.id
 		conn = db.connect()
 		successfulRejoin = False
-
 		if conn.execute("SELECT EXISTS(SELECT 1 FROM members WHERE discordID = '{discordID}')".format(discordID=discordID)).fetchone()[0] == True:
 			await channel.send('Welcome back to Noble Bros! I\'ve found you in our database.')
 			result = conn.execute("SELECT username FROM members WHERE discordID = '{discordID}'".format(discordID=discordID)).fetchone()
 			dbusername = result[0]
 			a_list.append(dbusername)
-			await channel.send(q_list[1])
-			msg = await client.wait_for('message', check=check)
+			try:
+				await channel.send(q_list[1])
+				msg = await client.wait_for('message', check=check,timeout=timeout)
+				a_list.append(msg.content)
+			except (asyncio.exceptions.TimeoutError, asyncio.exceptions.CancelledError):
+				await channel.send('Application has timed out. If you wish to continue, you will have to restart your application.')
+				return
 			a_list.append(msg.content)
 			userToAdd = a_list[1]
 
 			conn.execute("UPDATE members SET username='{username}' WHERE discordID = '{discordID}' and LOWER(username) = LOWER('{oldUsername}')".format(discordID=discordID,username=userToAdd, oldUsername=dbusername))
 			successfulRejoin=True
 
-			
 		else:
 			for question in q_list:
-				await channel.send(question)
-				msg = await client.wait_for('message', check=check)
-				a_list.append(msg.content)
+				try:
+					await channel.send(question)
+					msg = await client.wait_for('message', check=check,timeout=timeout)
+					a_list.append(msg.content)
+				except (asyncio.exceptions.TimeoutError, asyncio.exceptions.CancelledError):
+					await channel.send('Application has timed out. If you wish to continue, you will have to restart your application.')
+					return
+
 
 			dbusername = a_list[0]
 			userToAdd = a_list[1]
@@ -448,8 +467,6 @@ async def apply_button(ctx):
 			embed.add_field(name="**NEW RSN?**", value=a_list[1], inline=True)
 			embed.add_field(name="**DISCORD ID?**", value=discordID, inline=True)
 			await submit_channel.send(embed=embed)
-
-					
 
 	new_member_button.callback = new_member_callback
 	old_member_button.callback = old_member_callback
