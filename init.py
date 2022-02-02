@@ -27,13 +27,21 @@ reqRoles = [NOBLES,MODS,ADMIN]
 
 client=Bot(command_prefix="$")
 
-#client = discord.Client()
 db = create_engine(url, echo = False)
 
 # When the bot connects to Discord
 @client.event
 async def on_ready():
+	await client.wait_until_ready()
 	print('We have logged in as {0.user}'.format(client))
+
+	#Heroku restarts every 24hours so buttons need to initialize on_ready
+	app_channel = client.get_channel(936082496989315134)
+	#delete the old button and add new one
+	await app_channel.purge(limit=1)
+	await apply_button(app_channel)
+
+	
 
 
 # When a new member joins, send DM instructing them to apply
@@ -302,7 +310,7 @@ async def on_message(message):
 
 
 @client.command()
-async def apply_button(ctx):
+async def apply_button(channel):
 	timeout=5*60
 	submit_channel = client.get_channel(739285627190640780)
 
@@ -473,7 +481,7 @@ async def apply_button(ctx):
 	app_view = View(timeout=None)
 	app_view.add_item(new_member_button)
 	app_view.add_item(old_member_button)
-	await ctx.send("Press the button to apply after you have read the rules in <#638098870378823694>",view=app_view)
+	await channel.send("Press the button to apply after you have read the rules in <#638098870378823694>",view=app_view)
 
 client.run(TOKEN)
 
