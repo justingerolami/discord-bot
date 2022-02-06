@@ -97,9 +97,19 @@ async def on_message(message):
 				rankMsg = "Your next promotion is in " + str(daysUntilRank) + " days!"
 
 			#send message to the channel
-			await message.channel.send('{name}, you\'ve been a member for {days} days. You Joined on {joinedDate}.\n'\
+			if rank == 'rune' or rank =='dragon':
+				await message.channel.send('{name}, you\'ve been a member for {days} days. You Joined on {joinedDate}.\n'\
+											'The minimum rank you should be is addy!\n'\
+											'If you are active in the clan, your rank should be {currentRank}!\n'\
+											'{rankMsg}'.format(name=dbusername,days=numDays, joinedDate=niceJoinedDate, currentRank=rank, rankMsg=rankMsg))
+
+			else:
+				await message.channel.send('{name}, you\'ve been a member for {days} days. You Joined on {joinedDate}.\n'\
 			 							'Your rank should be {currentRank}!\n'\
 			 							'{rankMsg}'.format(name=dbusername,days=numDays, joinedDate=niceJoinedDate, currentRank=rank, rankMsg=rankMsg))
+				
+			
+			
 			conn.close()
 
 		except Exception as e:
