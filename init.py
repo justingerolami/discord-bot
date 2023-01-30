@@ -25,7 +25,7 @@ NEWMEMBER = int(os.environ['NEWMEMBER'])
 
 reqRoles = [NOBLES,MODS,ADMIN]
 
-client=Bot(command_prefix="$", intents=discord.Intents.default())
+client=Bot(command_prefix="$", intents=discord.Intents.all())
 
 db = create_engine(url, echo = False)
 
